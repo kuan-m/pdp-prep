@@ -1,0 +1,51 @@
+services:
+  pdp-php:
+    build:
+      context: ./infra/docker/php
+    container_name: pdp-prep-php
+    volumes:
+      - ./:/var/www/html
+    working_dir: /var/www/html
+    expose:
+      - "9000"        # php-fpm порт
+    command: php-fpm  # запускаем FPM (CLI доступен через exec)
+    networks:
+      - pdp-prep
+    healthcheck:
+      test: ["CMD", "php-fpm", "-t"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  pdp-nginx:
+    image: nginx:1.28.0-alpine
+    container_name: pdp-prep-nginx
+    volumes:
+      - ./:/var/www/html
+      - ./infra/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    ports:
+      - "8000:80"
+    depends_on:
+      pdp-php:
+        condition: service_healthy
+    networks:
+      - pdp-prep
+  
+  pdp-tools:
+    image: node:22-alpine
+    container_name: pdp-prep-tools
+    working_dir: /app
+    volumes:
+      - ./:/app
+    networks:
+      - pdp-prep
+    command: >
+      sh -c "
+        npm install -g autocannon &&
+        tail -f /dev/null
+      "
+
+networks:
+  pdp-prep:
+    driver: bridge
