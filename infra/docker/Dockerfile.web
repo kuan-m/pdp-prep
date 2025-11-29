@@ -1,0 +1,7 @@
+FROM nginx:1.28.0-alpine
+
+COPY web /usr/share/nginx/pdp
+COPY infra/docker/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+

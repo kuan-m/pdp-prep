@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP OPcache & JIT Performance Tests</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .test-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .test-item {
+            padding: 12px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .test-item:hover {
+            background: #e8e8e8;
+            transform: translateX(5px);
+        }
+
+        .test-item.active {
+            background: #667eea;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .test-item h3 {
+            font-size: 1em;
+            margin-bottom: 5px;
+        }
+
+        .test-item p {
+            font-size: 0.85em;
+            opacity: 0.8;
+        }
+
+        .params-section {
+            margin-top: 15px;
+        }
+
+        .param-group {
+            margin-bottom: 15px;
+        }
+
+        .param-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .param-group input {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.9em;
+            transition: border-color 0.3s;
+        }
+
+        .param-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .services-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .service-badge {
+            padding: 12px;
+            border-radius: 10px;
+            text-align: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+
+        .badge-opcache-only {
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+        }
+
+        .badge-opcache-jit {
+            background: linear-gradient(135deg, #4caf50 0%, #66bb6a 100%);
+        }
+
+        .badge-no-opcache {
+            background: linear-gradient(135deg, #f44336 0%, #ef5350 100%);
+        }
+
+        .results-container {
+            min-height: 400px;
+        }
+
+        .loading-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .result-card.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .result-card.success {
+            border-left: 4px solid #4caf50;
+        }
+
+        .result-card.loading {
+            border-left: 4px solid #667eea;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .result-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status-error {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-loading {
+            background: #667eea;
+            color: white;
+        }
+
+        .result-metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .metric {
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .metric-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .comparison-table {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .comparison-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .comparison-table tr:hover {
+            background: #f9f9f9;
+        }
+
+        .best-value {
+            background: #e8f5e9 !important;
+            font-weight: 600;
+        }
+
+        .worst-value {
+            background: #ffebee !important;
+        }
+
+        .chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .chart-label {
+            width: 150px;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .chart-bar-container {
+            flex: 1;
+            height: 30px;
+            background: #f0f0f0;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .chart-bar-fill {
+            height: 100%;
+            border-radius: 15px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .bar-opcache-only {
+            background: linear-gradient(90deg, #ffd700 0%, #ffed4e 100%);
+            color: #333;
+        }
+
+        .bar-opcache-jit {
+            background: linear-gradient(90deg, #4caf50 0%, #66bb6a 100%);
+        }
+
+        .bar-no-opcache {
+            background: linear-gradient(90deg, #f44336 0%, #ef5350 100%);
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .services-info {
+                grid-template-columns: 1fr;
+            }
+
+            .results-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 PHP OPcache & JIT Performance Tests</h1>
+            <p>Сравнение производительности с различными конфигурациями OPcache и JIT</p>
+        </div>
+
+        <div class="main-content">
+            <div class="sidebar">
+                <div class="card">
+                    <h2>📊 Тесты</h2>
+                    <div class="test-selector">
+                        <div class="test-item active" data-test="fibonacci.php">
+                            <h3>🔢 Арифметика</h3>
+                            <p>Фибоначчи</p>
+                        </div>
+                        <div class="test-item" data-test="file_operations.php">
+                            <h3>💾 I/O операции</h3>
+                            <p>Файловые операции</p>
+                        </div>
+                        <div class="test-item" data-test="json_operations.php">
+                            <h3>📄 JSON операции</h3>
+                            <p>Encode/Decode</p>
+                        </div>
+                        <div class="test-item" data-test="matrix_operations.php">
+                            <h3>🔷 Матричные операции</h3>
+                            <p>Умножение, транспонирование</p>
+                        </div>
+                        <div class="test-item" data-test="string_processing.php">
+                            <h3>📝 Обработка строк</h3>
+                            <p>Поиск, замена, парсинг</p>
+                        </div>
+                    </div>
+
+                    <div class="params-section" id="paramsSection">
+                        <!-- Параметры будут добавлены динамически -->
+                    </div>
+
+                    <button class="btn btn-primary" id="runTestBtn" onclick="runAllTests()">
+                        ▶ Запустить все тесты
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-area">
+                <div class="card">
+                    <h2>Сервисы</h2>
+                    <div class="services-info">
+                        <div class="service-badge badge-opcache-only">
+                            OPcache Only<br>
+                            <small>Порт 8080</small>
+                        </div>
+                        <div class="service-badge badge-opcache-jit">
+                            OPcache + JIT<br>
+                            <small>Порт 8081</small>
+                        </div>
+                        <div class="service-badge badge-no-opcache">
+                            No OPcache<br>
+                            <small>Порт 8082</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card results-container" id="resultsContainer">
+                    <h2>Результаты</h2>
+                    <div class="loading-state" id="loadingState" style="display: none;">
+                        <div class="spinner"></div>
+                        <p>Выполнение тестов...</p>
+                    </div>
+                    <div id="resultsContent">
+                        <p style="text-align: center; color: #666; padding: 40px;">
+                            Выберите тест и нажмите "Запустить все тесты" для сравнения производительности
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/api.php';
+        let currentTest = 'fibonacci.php';
+        let testParams = {};
+
+        // Инициализация параметров для каждого теста
+        const testConfigs = {
+            'fibonacci.php': [
+                { key: 'n', label: 'Номер числа (n)', default: 40, min: 1, max: 1000 },
+                { key: 'iterations', label: 'Итераций', default: 1, min: 1, max: 100 }
+            ],
+            'file_operations.php': [
+                { key: 'size', label: 'Размер файла (KB)', default: 1024, min: 1, max: 10240 },
+                { key: 'iterations', label: 'Итераций', default: 10, min: 1, max: 100 }
+            ],
+            'json_operations.php': [
+                { key: 'size', label: 'Размер данных', default: 1000, min: 1, max: 100000 },
+                { key: 'iterations', label: 'Итераций', default: 100, min: 1, max: 1000 },
+                { key: 'depth', label: 'Глубина', default: 3, min: 1, max: 10 }
+            ],
+            'matrix_operations.php': [
+                { key: 'size', label: 'Размер матрицы (NxN)', default: 100, min: 10, max: 500 },
+                { key: 'iterations', label: 'Итераций', default: 10, min: 1, max: 100 }
+            ],
+            'string_processing.php': [
+                { key: 'size', label: 'Длина текста (символов)', default: 10000, min: 100, max: 100000 },
+                { key: 'iterations', label: 'Итераций', default: 100, min: 1, max: 1000 }
+            ]
+        };
+
+        // Обработка выбора теста
+        document.querySelectorAll('.test-item').forEach(item => {
+            item.addEventListener('click', function() {
+                document.querySelectorAll('.test-item').forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                currentTest = this.dataset.test;
+                updateParams();
+            });
+        });
+
+        function updateParams() {
+            const paramsSection = document.getElementById('paramsSection');
+            const config = testConfigs[currentTest] || [];
+            
+            paramsSection.innerHTML = config.map(param => `
+                <div class="param-group">
+                    <label>${param.label}</label>
+                    <input type="number" 
+                           id="param-${param.key}" 
+                           value="${param.default}" 
+                           min="${param.min}" 
+                           max="${param.max}"
+                           onchange="updateTestParams()">
+                </div>
+            `).join('');
+            
+            updateTestParams();
+        }
+
+        function updateTestParams() {
+            const config = testConfigs[currentTest] || [];
+            testParams = {};
+            config.forEach(param => {
+                const input = document.getElementById(`param-${param.key}`);
+                if (input) {
+                    testParams[param.key] = parseInt(input.value) || param.default;
+                }
+            });
+        }
+
+        async function runAllTests() {
+            const btn = document.getElementById('runTestBtn');
+            const loadingState = document.getElementById('loadingState');
+            const resultsContent = document.getElementById('resultsContent');
+            
+            btn.disabled = true;
+            loadingState.style.display = 'block';
+            resultsContent.innerHTML = '';
+
+            try {
+                const params = encodeURIComponent(JSON.stringify(testParams));
+                const url = `${API_URL}?action=run_all&test=${currentTest}&params=${params}`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Ошибка выполнения тестов');
+                }
+            } catch (error) {
+                showError('Ошибка соединения: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                loadingState.style.display = 'none';
+            }
+        }
+
+        function displayResults(data) {
+            const resultsContent = document.getElementById('resultsContent');
+            const results = data.results || {};
+            
+            let html = '<div class="results-grid">';
+            
+            const services = [
+                { id: 'opcache-only', name: 'OPcache Only', class: 'badge-opcache-only', barClass: 'bar-opcache-only' },
+                { id: 'opcache-jit', name: 'OPcache + JIT', class: 'badge-opcache-jit', barClass: 'bar-opcache-jit' },
+                { id: 'no-opcache', name: 'No OPcache', class: 'badge-no-opcache', barClass: 'bar-no-opcache' }
+            ];
+
+            services.forEach(service => {
+                const result = results[service.id];
+                if (result && result.success) {
+                    html += createResultCard(service, result.data);
+                } else {
+                    html += createErrorCard(service, result?.error || 'Ошибка выполнения');
+                }
+            });
+
+            html += '</div>';
+
+            // Таблица сравнения
+            html += createComparisonTable(results, services);
+
+            // Сравнение конфигураций
+            html += createConfigComparison(results, services);
+
+            // График
+            html += createChart(results, services);
+
+            resultsContent.innerHTML = html;
+        }
+
+        function createResultCard(service, data) {
+            if (!data) {
+                return createErrorCard(service, 'Нет данных');
+            }
+            const perf = data.performance || {};
+            const time = perf.total_time_ms || 0;
+            const memory = perf.memory_used_mb || 0;
+            const phpConfig = data.php_config || {};
+
+            return `
+                <div class="result-card success">
+                    <div class="result-header">
+                        <div class="result-title">${service.name}</div>
+                        <span class="result-status status-success">✓ Успешно</span>
+                    </div>
+                    <div class="result-metrics">
+                        <div class="metric">
+                            <div class="metric-label">Время выполнения</div>
+                            <div class="metric-value">${time.toFixed(2)} мс</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-label">Память</div>
+                            <div class="metric-value">${memory.toFixed(2)} MB</div>
+                        </div>
+                    </div>
+                    <details style="margin-top: 15px;">
+                        <summary style="cursor: pointer; color: #667eea; font-weight: 600;">📋 Конфигурация PHP</summary>
+                        <div style="margin-top: 10px; padding: 15px; background: #f5f5f5; border-radius: 8px; font-size: 0.9em;">
+                            ${phpConfig.config_summary ? `
+                                <div style="margin-bottom: 8px;"><strong>OPcache:</strong> ${phpConfig.config_summary.opcache || (phpConfig.opcache_enabled ? '✅ Включен' : '❌ Отключен')}</div>
+                                <div style="margin-bottom: 8px;"><strong>JIT:</strong> ${phpConfig.config_summary.jit || (phpConfig.jit_enabled ? '✅ Включен' : '❌ Отключен')}</div>
+                                ${phpConfig.config_summary.jit_buffer ? `<div style="margin-bottom: 8px;"><strong>JIT Buffer:</strong> ${phpConfig.config_summary.jit_buffer}</div>` : ''}
+                                ${phpConfig.config_summary.opcache_memory ? `<div style="margin-bottom: 8px;"><strong>OPcache Memory:</strong> ${phpConfig.config_summary.opcache_memory}</div>` : ''}
+                                <div style="margin-bottom: 8px;"><strong>PHP Version:</strong> ${phpConfig.config_summary.php_version || phpConfig.php_version || 'N/A'}</div>
+                            ` : `
+                                <div style="margin-bottom: 8px;"><strong>OPcache:</strong> ${phpConfig.opcache_enabled ? '✅ Включен' : '❌ Отключен'}</div>
+                                <div style="margin-bottom: 8px;"><strong>OPcache CLI:</strong> ${phpConfig.opcache_enable_cli ? '✅ Включен' : '❌ Отключен'}</div>
+                                <div style="margin-bottom: 8px;"><strong>OPcache Memory:</strong> ${phpConfig.opcache_memory_consumption || 'N/A'} MB</div>
+                                <div style="margin-bottom: 8px;"><strong>OPcache Max Files:</strong> ${phpConfig.opcache_max_accelerated_files || 'N/A'}</div>
+                                <div style="margin-bottom: 8px;"><strong>Validate Timestamps:</strong> ${phpConfig.opcache_validate_timestamps ? '✅ Да' : '❌ Нет'}</div>
+                                <div style="margin-bottom: 8px;"><strong>JIT:</strong> ${phpConfig.jit_enabled ? '✅ Включен' : '❌ Отключен'}</div>
+                                ${phpConfig.jit_enabled ? `<div style="margin-bottom: 8px;"><strong>JIT Mode:</strong> ${phpConfig.jit_mode || 'N/A'}</div>` : ''}
+                                ${phpConfig.jit_buffer_size ? `<div style="margin-bottom: 8px;"><strong>JIT Buffer:</strong> ${phpConfig.jit_buffer_size}</div>` : ''}
+                                <div style="margin-bottom: 8px;"><strong>PHP Version:</strong> ${phpConfig.php_version || 'N/A'}</div>
+                            `}
+                        </div>
+                    </details>
+                </div>
+            `;
+        }
+
+        function createErrorCard(service, error) {
+            return `
+                <div class="result-card error">
+                    <div class="result-header">
+                        <div class="result-title">${service.name}</div>
+                        <span class="result-status status-error">✗ Ошибка</span>
+                    </div>
+                    <div class="error-message">${error}</div>
+                </div>
+            `;
+        }
+
+        function createComparisonTable(results, services) {
+            const validResults = services.filter(s => results[s.id]?.success && results[s.id]?.data);
+            if (validResults.length === 0) return '';
+
+            const firstResult = results[validResults[0].id].data;
+            if (!firstResult) return '';
+            const metrics = extractMetrics(firstResult);
+
+            let html = '<div class="comparison-table"><h3 style="margin-bottom: 15px;">Сравнительная таблица</h3><table>';
+            html += '<thead><tr><th>Метрика</th>';
+            validResults.forEach(s => html += `<th>${s.name}</th>`);
+            html += '</tr></thead><tbody>';
+
+            metrics.forEach(metric => {
+                html += `<tr><td><strong>${metric.label}</strong></td>`;
+                const values = [];
+                validResults.forEach(s => {
+                    const value = getMetricValue(results[s.id].data, metric.path);
+                    values.push({ service: s.name, value });
+                    html += `<td>${formatValue(value, metric.type)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function createConfigTable(results, services) {
+            const validResults = services.filter(s => results[s.id]?.success);
+            if (validResults.length === 0) return '';
+
+            let html = '<div class="comparison-table" style="margin-top: 20px;"><h3 style="margin-bottom: 15px;">Конфигурация PHP</h3><table>';
+            html += '<thead><tr><th>Параметр</th>';
+            validResults.forEach(s => html += `<th>${s.name}</th>`);
+            html += '</tr></thead><tbody>';
+
+            const configKeys = [
+                { key: 'opcache_enabled', label: 'OPcache включен', format: (v) => v ? '✅ Да' : '❌ Нет' },
+                { key: 'opcache_enable_cli', label: 'OPcache CLI', format: (v) => v ? '✅ Да' : '❌ Нет' },
+                { key: 'opcache_memory_consumption', label: 'OPcache Memory (MB)', format: (v) => v || 'N/A' },
+                { key: 'opcache_max_accelerated_files', label: 'OPcache Max Files', format: (v) => v || 'N/A' },
+                { key: 'opcache_validate_timestamps', label: 'Validate Timestamps', format: (v) => v ? '✅ Да' : '❌ Нет' },
+                { key: 'jit_enabled', label: 'JIT включен', format: (v) => v ? '✅ Да' : '❌ Нет' },
+                { key: 'jit_mode', label: 'JIT Mode', format: (v) => v || 'N/A' },
+                { key: 'jit_buffer_size', label: 'JIT Buffer Size', format: (v) => v || 'N/A' },
+                { key: 'php_version', label: 'PHP Version', format: (v) => v || 'N/A' }
+            ];
+
+            configKeys.forEach(config => {
+                html += `<tr><td><strong>${config.label}</strong></td>`;
+                validResults.forEach(s => {
+                    const value = results[s.id].data.php_config?.[config.key];
+                    html += `<td>${config.format(value)}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function createConfigComparison(results, services) {
+            const validResults = services.filter(s => results[s.id]?.success && results[s.id]?.data);
+            if (validResults.length === 0) return '';
+
+            let html = '<div class="comparison-table" style="margin-top: 20px;"><h3 style="margin-bottom: 15px;">Сравнение конфигураций PHP</h3><table>';
+            html += '<thead><tr><th>Параметр</th>';
+            validResults.forEach(s => html += `<th>${s.name}</th>`);
+            html += '</tr></thead><tbody>';
+
+            const configKeys = [
+                { key: 'opcache', label: 'OPcache', getValue: (config) => config.config_summary?.opcache || (config.opcache_enabled ? '✅ Включен' : '❌ Отключен') },
+                { key: 'jit', label: 'JIT', getValue: (config) => config.config_summary?.jit || (config.jit_enabled ? '✅ Включен' : '❌ Отключен') },
+                { key: 'jit_buffer', label: 'JIT Buffer', getValue: (config) => config.config_summary?.jit_buffer || config.jit_buffer_size || 'N/A' },
+                { key: 'opcache_memory', label: 'OPcache Memory', getValue: (config) => config.config_summary?.opcache_memory || (config.opcache_memory_consumption ? config.opcache_memory_consumption + ' MB' : 'N/A') },
+                { key: 'php_version', label: 'PHP Version', getValue: (config) => config.config_summary?.php_version || config.php_version || 'N/A' },
+                { key: 'jit_mode', label: 'JIT Mode', getValue: (config) => config.jit_mode || 'N/A' }
+            ];
+
+            configKeys.forEach(configKey => {
+                html += `<tr><td><strong>${configKey.label}</strong></td>`;
+                validResults.forEach(s => {
+                    const config = results[s.id].data.php_config || {};
+                    const value = configKey.getValue(config);
+                    html += `<td>${value}</td>`;
+                });
+                html += '</tr>';
+            });
+
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function createChart(results, services) {
+            const validResults = services.filter(s => results[s.id]?.success && results[s.id]?.data);
+            if (validResults.length === 0) return '';
+
+            const times = validResults.map(s => {
+                const perf = (results[s.id].data && results[s.id].data.performance) || {};
+                return {
+                    service: s.name,
+                    time: perf.total_time_ms || 0,
+                    barClass: s.barClass
+                };
+            });
+
+            const maxTime = Math.max(...times.map(t => t.time));
+
+            let html = '<div class="chart-container"><h3 style="margin-bottom: 20px;">Время выполнения (мс)</h3>';
+            times.forEach(item => {
+                const width = maxTime > 0 ? (item.time / maxTime * 100) : 0;
+                html += `
+                    <div class="chart-bar">
+                        <div class="chart-label">${item.service}</div>
+                        <div class="chart-bar-container">
+                            <div class="chart-bar-fill ${item.barClass}" style="width: ${width}%">
+                                ${item.time.toFixed(2)} мс
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+
+            return html;
+        }
+
+        function extractMetrics(data) {
+            const metrics = [];
+            
+            if (data.performance) {
+                metrics.push({ label: 'Общее время (мс)', path: 'performance.total_time_ms', type: 'time' });
+                metrics.push({ label: 'Память (MB)', path: 'performance.memory_used_mb', type: 'memory' });
+            }
+
+            if (data.results) {
+                Object.keys(data.results).forEach(key => {
+                    const result = data.results[key];
+                    if (result.time_ms) {
+                        metrics.push({ label: `${key} - время (мс)`, path: `results.${key}.time_ms`, type: 'time' });
+                    }
+                });
+            }
+
+            return metrics;
+        }
+
+        function getMetricValue(data, path) {
+            const parts = path.split('.');
+            let value = data;
+            for (const part of parts) {
+                if (value && typeof value === 'object') {
+                    value = value[part];
+                } else {
+                    return null;
+                }
+            }
+            return value;
+        }
+
+        function formatValue(value, type) {
+            if (value === null || value === undefined) return '-';
+            if (type === 'time') return `${parseFloat(value).toFixed(2)} мс`;
+            if (type === 'memory') return `${parseFloat(value).toFixed(2)} MB`;
+            return value;
+        }
+
+        function showError(message) {
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `<div class="error-message">${message}</div>`;
+        }
+
+        // Инициализация
+        updateParams();
+    </script>
+</body>
+</html>
+

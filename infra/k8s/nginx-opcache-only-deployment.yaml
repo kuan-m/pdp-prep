@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-opcache-only-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name opcache-only.local;
+
+        root /var/www/pdp;
+        index index.php;
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+
+        location ~ \.php$ {
+            fastcgi_pass php-service-opcache-only:9000;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-opcache-only
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-opcache-only
+  template:
+    metadata:
+      labels:
+        app: nginx-opcache-only
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.28.0-alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-opcache-only-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-opcache-only
+spec:
+  selector:
+    app: nginx-opcache-only
+  ports:
+    - port: 80
+      name: http
+      targetPort: 80
+  type: LoadBalancer
+
