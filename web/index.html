@@ -521,9 +521,9 @@
                 { key: 'iterations', label: 'Итераций', default: 10, min: 1, max: 100 }
             ],
             'json_operations.php': [
-                { key: 'size', label: 'Размер данных', default: 1000, min: 1, max: 100000 },
+                { key: 'size', label: 'Размер данных', default: 1000, min: 1, max: 50000 },
                 { key: 'iterations', label: 'Итераций', default: 100, min: 1, max: 1000 },
-                { key: 'depth', label: 'Глубина', default: 3, min: 1, max: 10 }
+                { key: 'depth', label: 'Глубина', default: 3, min: 1, max: 5 }
             ],
             'matrix_operations.php': [
                 { key: 'size', label: 'Размер матрицы (NxN)', default: 100, min: 10, max: 500 },
@@ -557,11 +557,67 @@
                            value="${param.default}" 
                            min="${param.min}" 
                            max="${param.max}"
+                           step="1"
+                           required
+                           oninput="validateParam('${param.key}', ${param.min}, ${param.max})"
                            onchange="updateTestParams()">
+                    <small class="param-error" id="error-${param.key}" style="display: none; color: #f44336; font-size: 0.8em; margin-top: 4px;"></small>
+                    <small class="param-hint" style="display: block; color: #666; font-size: 0.75em; margin-top: 2px;">
+                        Диапазон: ${param.min} - ${param.max}
+                    </small>
                 </div>
             `).join('');
             
             updateTestParams();
+        }
+
+        function validateParam(key, min, max) {
+            const input = document.getElementById(`param-${key}`);
+            const errorEl = document.getElementById(`error-${key}`);
+            
+            if (!input) return true;
+            
+            const value = parseInt(input.value);
+            let isValid = true;
+            let errorMessage = '';
+            
+            if (isNaN(value) || input.value === '') {
+                isValid = false;
+                errorMessage = 'Значение обязательно';
+            } else if (value < min) {
+                isValid = false;
+                errorMessage = `Минимальное значение: ${min}`;
+                input.value = min;
+            } else if (value > max) {
+                isValid = false;
+                errorMessage = `Максимальное значение: ${max}`;
+                input.value = max;
+            }
+            
+            if (isValid) {
+                input.style.borderColor = '#ddd';
+                errorEl.style.display = 'none';
+            } else {
+                input.style.borderColor = '#f44336';
+                errorEl.textContent = errorMessage;
+                errorEl.style.display = 'block';
+            }
+            
+            return isValid;
+        }
+
+        function validateAllParams() {
+            const config = testConfigs[currentTest] || [];
+            let allValid = true;
+            
+            config.forEach(param => {
+                const isValid = validateParam(param.key, param.min, param.max);
+                if (!isValid) {
+                    allValid = false;
+                }
+            });
+            
+            return allValid;
         }
 
         function updateTestParams() {
@@ -570,7 +626,21 @@
             config.forEach(param => {
                 const input = document.getElementById(`param-${param.key}`);
                 if (input) {
-                    testParams[param.key] = parseInt(input.value) || param.default;
+                    const value = parseInt(input.value);
+                    // Применяем ограничения как на бэкенде
+                    if (!isNaN(value)) {
+                        if (value < param.min) {
+                            testParams[param.key] = param.min;
+                            input.value = param.min;
+                        } else if (value > param.max) {
+                            testParams[param.key] = param.max;
+                            input.value = param.max;
+                        } else {
+                            testParams[param.key] = value;
+                        }
+                    } else {
+                        testParams[param.key] = param.default;
+                    }
                 }
             });
         }
@@ -579,6 +649,15 @@
             const btn = document.getElementById('runTestBtn');
             const loadingState = document.getElementById('loadingState');
             const resultsContent = document.getElementById('resultsContent');
+            
+            // Валидация перед отправкой
+            if (!validateAllParams()) {
+                showError('Пожалуйста, исправьте ошибки в параметрах');
+                return;
+            }
+            
+            // Обновляем параметры с учетом валидации
+            updateTestParams();
             
             btn.disabled = true;
             loadingState.style.display = 'block';
@@ -589,6 +668,11 @@
                 const url = `${API_URL}?action=run_all&test=${currentTest}&params=${params}`;
                 
                 const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
                 const data = await response.json();
 
                 if (data.success) {
