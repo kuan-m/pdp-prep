@@ -22,6 +22,7 @@ $n = isset($_GET['n']) ? (int)$_GET['n'] : 40;
 $iterations = isset($_GET['iterations']) ? (int)$_GET['iterations'] : 1;
 /**
  * Рекурсивное вычисление Фибоначчи (медленное, для демонстрации)
+ * time O(N^2), space O(N)
  */
 function fibonacciRecursive($n) {
     if ($n <= 1) {
@@ -32,6 +33,7 @@ function fibonacciRecursive($n) {
 
 /**
  * Итеративное вычисление Фибоначчи (быстрое)
+ * time O(N), space O(1)
  */
 function fibonacciIterative($n) {
     if ($n <= 1) {
@@ -52,6 +54,7 @@ function fibonacciIterative($n) {
 
 /**
  * Матричное вычисление Фибоначчи (оптимизированное)
+ * time O(logN), space O(logN)
  */
 function fibonacciMatrix($n) {
     if ($n <= 1) {

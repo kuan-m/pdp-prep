@@ -48,6 +48,7 @@ function generateText($size) {
 
 /**
  * Подсчет вхождений подстроки (без использования strpos)
+ * time O(N × M), space O(1)
  */
 function countSubstring($text, $substring) {
     $count = 0;
@@ -72,6 +73,7 @@ function countSubstring($text, $substring) {
 
 /**
  * Замена символов в цикле
+ * time O(N), space O(N)
  */
 function replaceChars($text, $from, $to) {
     $result = '';
@@ -88,6 +90,7 @@ function replaceChars($text, $from, $to) {
 
 /**
  * Подсчет слов (разделитель - пробел)
+ * time O(N), space O(1)
  */
 function countWords($text) {
     $count = 0;
@@ -110,6 +113,7 @@ function countWords($text) {
 
 /**
  * Реверс строки (без strrev)
+ * time O(N), space O(N)
  */
 function reverseString($text) {
     $result = '';
@@ -122,6 +126,7 @@ function reverseString($text) {
 
 /**
  * Удаление дубликатов символов
+ * time O(N), space O(K)
  */
 function removeDuplicates($text) {
     $result = '';
@@ -141,6 +146,7 @@ function removeDuplicates($text) {
 
 /**
  * Подсчет частоты символов
+ * time O(N), space O(K)
  */
 function countCharFrequency($text) {
     $freq = [];

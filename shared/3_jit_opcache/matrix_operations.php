@@ -50,6 +50,7 @@ function generateMatrix($size) {
 
 /**
  * Умножение матриц
+ * time O(N^3), space O(N^2)
  */
 function matrixMultiply($a, $b) {
     $n = count($a);
@@ -72,6 +73,7 @@ function matrixMultiply($a, $b) {
 
 /**
  * Транспонирование матрицы
+ * time O(N^2), space O(N^2)
  */
 function matrixTranspose($matrix) {
     $n = count($matrix);
@@ -90,6 +92,7 @@ function matrixTranspose($matrix) {
 
 /**
  * Сложение матриц
+ * time O(N^2), space O(N^2)
  */
 function matrixAdd($a, $b) {
     $n = count($a);
@@ -108,6 +111,7 @@ function matrixAdd($a, $b) {
 
 /**
  * Вычисление детерминанта (рекурсивный алгоритм)
+ * time O(N!), space O(N^2)
  */
 function matrixDeterminant($matrix) {
     $n = count($matrix);
