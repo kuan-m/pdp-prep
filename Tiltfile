@@ -12,9 +12,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.opcache-only',
   live_update=[
-    sync('./shared/3_jit_opcache', '/var/www/pdp/shared/3_jit_opcache'),
-    sync('./shared/1_lifecycle', '/var/www/pdp/shared/1_lifecycle'),
-    sync('./shared/2_php_fpm', '/var/www/pdp/shared/2_php_fpm'),
+    sync('./shared', '/var/www/pdp/shared'),
   ],
 )
 
@@ -30,9 +28,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.opcache-jit',
   live_update=[
-    sync('./shared/3_jit_opcache', '/var/www/pdp/shared/3_jit_opcache'),
-    sync('./shared/1_lifecycle', '/var/www/pdp/shared/1_lifecycle'),
-    sync('./shared/2_php_fpm', '/var/www/pdp/shared/2_php_fpm'),
+    sync('./shared', '/var/www/pdp/shared'),
   ],
 )
 
@@ -48,9 +44,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.no-opcache',
   live_update=[
-    sync('./shared/3_jit_opcache', '/var/www/pdp/shared/3_jit_opcache'),
-    sync('./shared/1_lifecycle', '/var/www/pdp/shared/1_lifecycle'),
-    sync('./shared/2_php_fpm', '/var/www/pdp/shared/2_php_fpm'),
+    sync('./shared', '/var/www/pdp/shared'),
   ],
 )
 
