@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-fpm-aggressive-config
+data:
+  default.conf: |
+    server {
+        listen 80;
+        server_name fpm-aggressive.local;
+
+        root /var/www/pdp;
+        index index.php;
+
+        # Обработка PHP файлов - передаем в PHP-FPM
+        location ~ \.php$ {
+            fastcgi_pass php-service-fpm-aggressive:9000;
+            include fastcgi_params;
+            fastcgi_param SCRIPT_FILENAME /var/www/pdp/shared/$fastcgi_script_name;
+            fastcgi_read_timeout 300;
+        }
+
+        location / {
+            try_files $uri $uri/ /index.php?$query_string;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-fpm-aggressive
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-fpm-aggressive
+  template:
+    metadata:
+      labels:
+        app: nginx-fpm-aggressive
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.28.0-alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-fpm-aggressive-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-fpm-aggressive
+spec:
+  selector:
+    app: nginx-fpm-aggressive
+  ports:
+    - port: 80
+      name: http
+      targetPort: 80
+  type: LoadBalancer
+

@@ -77,6 +77,54 @@ k8s_resource('nginx-no-opcache', port_forwards=8082,
 
 ### End of Nginx - No OPcache ###
 
+### PHP Service - FPM Default (pm=static, max_children=5, max_requests=500) ###
+
+docker_build(
+  'pdp-prep/php-fpm-default',
+  '.',
+  dockerfile='./infra/docker/Dockerfile.php-fpm-default',
+  live_update=[
+    sync('./shared', '/var/www/pdp/shared'),
+  ],
+)
+
+k8s_yaml('./infra/k8s/php-service-fpm-default-deployment.yaml')
+k8s_resource('php-service-fpm-default', labels="services")
+
+### End of PHP Service - FPM Default ###
+
+### PHP Service - FPM Aggressive (pm=dynamic, max_children=50, max_requests=1000) ###
+
+docker_build(
+  'pdp-prep/php-fpm-aggressive',
+  '.',
+  dockerfile='./infra/docker/Dockerfile.php-fpm-aggressive',
+  live_update=[
+    sync('./shared', '/var/www/pdp/shared'),
+  ],
+)
+
+k8s_yaml('./infra/k8s/php-service-fpm-aggressive-deployment.yaml')
+k8s_resource('php-service-fpm-aggressive', labels="services")
+
+### End of PHP Service - FPM Aggressive ###
+
+### Nginx - FPM Default ###
+
+k8s_yaml('./infra/k8s/nginx-fpm-default-deployment.yaml')
+k8s_resource('nginx-fpm-default', port_forwards=8083, 
+             resource_deps=['php-service-fpm-default'], labels="frontend")
+
+### End of Nginx - FPM Default ###
+
+### Nginx - FPM Aggressive ###
+
+k8s_yaml('./infra/k8s/nginx-fpm-aggressive-deployment.yaml')
+k8s_resource('nginx-fpm-aggressive', port_forwards=8084, 
+             resource_deps=['php-service-fpm-aggressive'], labels="frontend")
+
+### End of Nginx - FPM Aggressive ###
+
 ### Web Frontend ###
 
 docker_build(
