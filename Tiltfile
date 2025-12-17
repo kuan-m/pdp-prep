@@ -77,53 +77,77 @@ k8s_resource('nginx-no-opcache', port_forwards=8082,
 
 ### End of Nginx - No OPcache ###
 
-### PHP Service - FPM Default (pm=static, max_children=5, max_requests=500) ###
+### PHP Service - FPM Low (pm=static, max_children=5, max_requests=500) ###
 
 docker_build(
-  'pdp-prep/php-fpm-default',
+  'pdp-prep/php-fpm-low',
   '.',
-  dockerfile='./infra/docker/Dockerfile.php-fpm-default',
+  dockerfile='./infra/docker/Dockerfile.php-fpm-low',
   live_update=[
     sync('./shared', '/var/www/pdp/shared'),
   ],
 )
 
-k8s_yaml('./infra/k8s/php-service-fpm-default-deployment.yaml')
-k8s_resource('php-service-fpm-default', labels="services")
+k8s_yaml('./infra/k8s/php-service-fpm-low-deployment.yaml')
+k8s_resource('php-service-fpm-low', labels="services")
 
-### End of PHP Service - FPM Default ###
+### End of PHP Service - FPM Low ###
 
-### PHP Service - FPM Aggressive (pm=dynamic, max_children=50, max_requests=1000) ###
+### PHP Service - FPM Mid (pm=dynamic, max_children=20, max_requests=750) ###
 
 docker_build(
-  'pdp-prep/php-fpm-aggressive',
+  'pdp-prep/php-fpm-mid',
   '.',
-  dockerfile='./infra/docker/Dockerfile.php-fpm-aggressive',
+  dockerfile='./infra/docker/Dockerfile.php-fpm-mid',
   live_update=[
     sync('./shared', '/var/www/pdp/shared'),
   ],
 )
 
-k8s_yaml('./infra/k8s/php-service-fpm-aggressive-deployment.yaml')
-k8s_resource('php-service-fpm-aggressive', labels="services")
+k8s_yaml('./infra/k8s/php-service-fpm-mid-deployment.yaml')
+k8s_resource('php-service-fpm-mid', labels="services")
 
-### End of PHP Service - FPM Aggressive ###
+### End of PHP Service - FPM Mid ###
 
-### Nginx - FPM Default ###
+### PHP Service - FPM High (pm=dynamic, max_children=50, max_requests=1000) ###
 
-k8s_yaml('./infra/k8s/nginx-fpm-default-deployment.yaml')
-k8s_resource('nginx-fpm-default', port_forwards=8083, 
-             resource_deps=['php-service-fpm-default'], labels="frontend")
+docker_build(
+  'pdp-prep/php-fpm-high',
+  '.',
+  dockerfile='./infra/docker/Dockerfile.php-fpm-high',
+  live_update=[
+    sync('./shared', '/var/www/pdp/shared'),
+  ],
+)
 
-### End of Nginx - FPM Default ###
+k8s_yaml('./infra/k8s/php-service-fpm-high-deployment.yaml')
+k8s_resource('php-service-fpm-high', labels="services")
 
-### Nginx - FPM Aggressive ###
+### End of PHP Service - FPM High ###
 
-k8s_yaml('./infra/k8s/nginx-fpm-aggressive-deployment.yaml')
-k8s_resource('nginx-fpm-aggressive', port_forwards=8084, 
-             resource_deps=['php-service-fpm-aggressive'], labels="frontend")
+### Nginx - FPM Low ###
 
-### End of Nginx - FPM Aggressive ###
+k8s_yaml('./infra/k8s/nginx-fpm-low-deployment.yaml')
+k8s_resource('nginx-fpm-low', port_forwards=8083, 
+             resource_deps=['php-service-fpm-low'], labels="frontend")
+
+### End of Nginx - FPM Low ###
+
+### Nginx - FPM Mid ###
+
+k8s_yaml('./infra/k8s/nginx-fpm-mid-deployment.yaml')
+k8s_resource('nginx-fpm-mid', port_forwards=8084, 
+             resource_deps=['php-service-fpm-mid'], labels="frontend")
+
+### End of Nginx - FPM Mid ###
+
+### Nginx - FPM High ###
+
+k8s_yaml('./infra/k8s/nginx-fpm-high-deployment.yaml')
+k8s_resource('nginx-fpm-high', port_forwards=8085, 
+             resource_deps=['php-service-fpm-high'], labels="frontend")
+
+### End of Nginx - FPM High ###
 
 ### Web Frontend ###
 
@@ -159,6 +183,6 @@ docker_build(
 )
 
 k8s_yaml('./infra/k8s/api-gateway-deployment.yaml')
-k8s_resource('api-gateway', resource_deps=['web'], labels="services")
+k8s_resource('api-gateway', labels="services")
 
 ### End of API Gateway ###

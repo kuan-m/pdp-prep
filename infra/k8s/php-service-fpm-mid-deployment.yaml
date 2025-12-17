@@ -1,30 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: php-service-fpm-default
+  name: php-service-fpm-mid
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: php-service-fpm-default
+      app: php-service-fpm-mid
   template:
     metadata:
       labels:
-        app: php-service-fpm-default
+        app: php-service-fpm-mid
     spec:
       containers:
         - name: php-fpm
-          image: pdp-prep/php-fpm-default
+          image: pdp-prep/php-fpm-mid
           ports:
             - containerPort: 9000
               name: php-fpm
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "100m"
-            limits:
               memory: "512Mi"
               cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "2000m"
           env:
             - name: PHP_FPM_LISTEN
               value: "0.0.0.0:9000"
@@ -32,10 +32,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: php-service-fpm-default
+  name: php-service-fpm-mid
 spec:
   selector:
-    app: php-service-fpm-default
+    app: php-service-fpm-mid
   ports:
     - port: 9000
       name: php-fpm

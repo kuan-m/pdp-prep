@@ -4,7 +4,8 @@ RUN apt-get update && apt-get install -y \
     libzip-dev unzip git strace \
     && docker-php-ext-install pdo pdo_mysql zip opcache
 
-COPY infra/docker/php/php-opcache-jit.ini /usr/local/etc/php/php.ini
+COPY infra/docker/php/php-opcache-only.ini /usr/local/etc/php/php.ini
+COPY infra/docker/php-fpm/www-dynamic-mid.conf /usr/local/etc/php-fpm.d/www.conf
 
 COPY --from=composer:2.9 /usr/bin/composer /usr/bin/composer
 

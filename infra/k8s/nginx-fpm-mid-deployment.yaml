@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: nginx-fpm-aggressive-config
+  name: nginx-fpm-mid-config
 data:
   default.conf: |
     server {
         listen 80;
-        server_name fpm-aggressive.local;
+        server_name fpm-mid.local;
 
         root /var/www/pdp;
         index index.php;
 
         # Обработка PHP файлов - передаем в PHP-FPM
         location ~ \.php$ {
-            fastcgi_pass php-service-fpm-aggressive:9000;
+            fastcgi_pass php-service-fpm-mid:9000;
             include fastcgi_params;
             fastcgi_param SCRIPT_FILENAME /var/www/pdp/shared/$fastcgi_script_name;
             fastcgi_read_timeout 300;
@@ -27,16 +27,16 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-fpm-aggressive
+  name: nginx-fpm-mid
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-fpm-aggressive
+      app: nginx-fpm-mid
   template:
     metadata:
       labels:
-        app: nginx-fpm-aggressive
+        app: nginx-fpm-mid
     spec:
       containers:
         - name: nginx
@@ -50,15 +50,15 @@ spec:
       volumes:
         - name: nginx-config
           configMap:
-            name: nginx-fpm-aggressive-config
+            name: nginx-fpm-mid-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-fpm-aggressive
+  name: nginx-fpm-mid
 spec:
   selector:
-    app: nginx-fpm-aggressive
+    app: nginx-fpm-mid
   ports:
     - port: 80
       name: http

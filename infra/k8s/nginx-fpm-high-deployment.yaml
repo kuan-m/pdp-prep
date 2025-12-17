@@ -1,19 +1,19 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: nginx-fpm-default-config
+  name: nginx-fpm-high-config
 data:
   default.conf: |
     server {
         listen 80;
-        server_name fpm-default.local;
+        server_name fpm-high.local;
 
         root /var/www/pdp;
         index index.php;
 
         # Обработка PHP файлов - передаем в PHP-FPM
         location ~ \.php$ {
-            fastcgi_pass php-service-fpm-default:9000;
+            fastcgi_pass php-service-fpm-high:9000;
             include fastcgi_params;
             fastcgi_param SCRIPT_FILENAME /var/www/pdp/shared/$fastcgi_script_name;
             fastcgi_read_timeout 300;
@@ -27,16 +27,16 @@ data:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-fpm-default
+  name: nginx-fpm-high
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: nginx-fpm-default
+      app: nginx-fpm-high
   template:
     metadata:
       labels:
-        app: nginx-fpm-default
+        app: nginx-fpm-high
     spec:
       containers:
         - name: nginx
@@ -50,15 +50,15 @@ spec:
       volumes:
         - name: nginx-config
           configMap:
-            name: nginx-fpm-default-config
+            name: nginx-fpm-high-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-fpm-default
+  name: nginx-fpm-high
 spec:
   selector:
-    app: nginx-fpm-default
+    app: nginx-fpm-high
   ports:
     - port: 80
       name: http
