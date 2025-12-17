@@ -186,3 +186,34 @@ k8s_yaml('./infra/k8s/api-gateway-deployment.yaml')
 k8s_resource('api-gateway', labels="services")
 
 ### End of API Gateway ###
+
+### Go Service ###
+
+go_compile_cmd = 'cd services/go-service && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ../../build/go-service ./cmd/main.go'
+if os.name == 'nt':
+  go_compile_cmd = './infra/docker/go-service-build.bat'
+
+local_resource(
+  'go-service-compile',
+  go_compile_cmd,
+  deps=['./services/go-service'], 
+  labels="compiles"
+)
+
+docker_build_with_restart(
+  'pdp-prep/go-service',
+  '.',
+  entrypoint=['/app/build/go-service'],
+  dockerfile='./infra/docker/Dockerfile.go-service-dev',
+  only=[
+    './build/go-service',
+  ],
+  live_update=[
+    sync('./build', '/app/build'),
+  ],
+)
+
+k8s_yaml('./infra/k8s/go-service-deployment.yaml')
+k8s_resource('go-service', port_forwards=8090, labels="services")
+
+### End of Go Service ###

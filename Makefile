@@ -1,4 +1,5 @@
 .PHONY: test-low test-mid test-high test-low-light test-mid-light test-high-light help
+.PHONY: test-go test-go-light
 
 # Параметры по умолчанию для нагрузочного тестирования
 C ?= 50
@@ -9,6 +10,11 @@ URL_HIGH = http://localhost:8085/2_php_fpm/test.php
 URL_LOW_LIGHT = http://localhost:8083/2_php_fpm/test-light.php
 URL_MID_LIGHT = http://localhost:8084/2_php_fpm/test-light.php
 URL_HIGH_LIGHT = http://localhost:8085/2_php_fpm/test-light.php
+
+# Go сервис URLs (по умолчанию порт 8090)
+GO_PORT ?= 8090
+URL_GO = http://localhost:$(GO_PORT)/test
+URL_GO_LIGHT = http://localhost:$(GO_PORT)/test-light
 
 # =========================================
 # Помощь
@@ -36,6 +42,10 @@ help:
 	@echo "Параметры:"
 	@echo "  C - количество одновременных соединений (по умолчанию: 100)"
 	@echo "  D - длительность теста в секундах (по умолчанию: 30)"
+	@echo ""
+	@echo "Go сервис:"
+	@echo "  make test-go          - Тестирование Go сервиса (порт $(GO_PORT))"
+	@echo "  make test-go-light    - Тестирование Go сервиса с легким скриптом"
 	@echo "======================================="
 
 # =========================================
@@ -104,3 +114,23 @@ test-high-light:
 	@echo "======================================="
 	@npx autocannon -c $(C) -d $(D) $(URL_HIGH_LIGHT) --renderStatusCodes
 
+# =========================================
+# Тестирование Go сервиса
+# =========================================
+test-go:
+	@echo "======================================="
+	@echo "📊 Тестирование Go сервиса"
+	@echo "Порт: $(GO_PORT)"
+	@echo "Параметры: $(C) соединений, $(D) секунд"
+	@echo "URL: $(URL_GO)"
+	@echo "======================================="
+	@npx autocannon -c $(C) -d $(D) $(URL_GO) --renderStatusCodes
+
+test-go-light:
+	@echo "======================================="
+	@echo "📊 Тестирование Go сервиса (легкий скрипт)"
+	@echo "Порт: $(GO_PORT)"
+	@echo "Параметры: $(C) соединений, $(D) секунд"
+	@echo "URL: $(URL_GO_LIGHT)"
+	@echo "======================================="
+	@npx autocannon -c $(C) -d $(D) $(URL_GO_LIGHT) --renderStatusCodes
