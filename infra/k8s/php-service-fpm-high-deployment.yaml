@@ -27,6 +27,20 @@ spec:
           env:
             - name: PHP_FPM_LISTEN
               value: "0.0.0.0:9000"
+        - name: php-fpm-exporter
+          image: hipages/php-fpm_exporter:latest
+          ports:
+            - containerPort: 9253
+              name: metrics
+          args:
+            - '--phpfpm.scrape-uri=tcp://127.0.0.1:9000/status'
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "64Mi"
+              cpu: "50m"
 ---
 apiVersion: v1
 kind: Service
@@ -39,5 +53,8 @@ spec:
     - port: 9000
       name: php-fpm
       targetPort: 9000
+    - port: 9253
+      name: metrics
+      targetPort: 9253
   type: ClusterIP
 

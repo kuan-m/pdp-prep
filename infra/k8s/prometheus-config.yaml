@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+      evaluation_interval: 5s
+      external_labels:
+        cluster: pdp-prep
+        environment: development
+
+    scrape_configs:
+      # PHP-FPM low
+      - job_name: 'php-fpm-low'
+        scrape_interval: 5s
+        static_configs:
+          - targets:
+              - php-service-fpm-low:9253
+            labels:
+              service: php-service-fpm-low
+
+      # PHP-FPM mid
+      - job_name: 'php-fpm-mid'
+        scrape_interval: 5s
+        static_configs:
+          - targets:
+              - php-service-fpm-mid:9253
+            labels:
+              service: php-service-fpm-mid
+
+      # PHP-FPM high
+      - job_name: 'php-fpm-high'
+        scrape_interval: 5s
+        static_configs:
+          - targets:
+              - php-service-fpm-high:9253
+            labels:
+              service: php-service-fpm-high
+
+      # Prometheus self
+      - job_name: 'prometheus'
+        scrape_interval: 5s
+        static_configs:
+          - targets:
+              - localhost:9090

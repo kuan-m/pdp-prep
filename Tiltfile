@@ -89,7 +89,7 @@ docker_build(
 )
 
 k8s_yaml('./infra/k8s/php-service-fpm-low-deployment.yaml')
-k8s_resource('php-service-fpm-low', labels="services")
+k8s_resource('php-service-fpm-low', port_forwards="9253:9253", labels="services")
 
 ### End of PHP Service - FPM Low ###
 
@@ -105,7 +105,7 @@ docker_build(
 )
 
 k8s_yaml('./infra/k8s/php-service-fpm-mid-deployment.yaml')
-k8s_resource('php-service-fpm-mid', labels="services")
+k8s_resource('php-service-fpm-mid', port_forwards="9254:9253", labels="services")
 
 ### End of PHP Service - FPM Mid ###
 
@@ -121,7 +121,7 @@ docker_build(
 )
 
 k8s_yaml('./infra/k8s/php-service-fpm-high-deployment.yaml')
-k8s_resource('php-service-fpm-high', labels="services")
+k8s_resource('php-service-fpm-high', port_forwards="9255:9253", labels="services")
 
 ### End of PHP Service - FPM High ###
 
@@ -217,3 +217,18 @@ k8s_yaml('./infra/k8s/go-service-deployment.yaml')
 k8s_resource('go-service', port_forwards=8090, labels="services")
 
 ### End of Go Service ###
+
+### Monitoring Infrastructure ###
+
+# Prometheus
+k8s_yaml('./infra/k8s/prometheus-config.yaml')
+k8s_yaml('./infra/k8s/prometheus-deployment.yaml')
+k8s_resource('prometheus', port_forwards=9090, labels="monitoring")
+
+# Grafana
+k8s_yaml('./infra/k8s/grafana-deployment.yaml')
+k8s_yaml('./infra/k8s/grafana-dashboard-provider.yaml')
+k8s_yaml('./infra/k8s/grafana-dashboard.yaml')
+k8s_resource('grafana', port_forwards=3001, labels="monitoring")
+
+### End of Monitoring Infrastructure ###

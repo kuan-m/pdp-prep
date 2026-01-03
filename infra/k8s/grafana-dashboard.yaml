@@ -1,0 +1,412 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-microservices
+  labels:
+    app: grafana
+  annotations:
+    grafana-dashboard: "1"
+data:
+  microservices-dashboard.json: |
+    {
+      "id": 1,
+      "uid": "microservices-monitoring",
+      "title": "Microservices Monitoring",
+      "tags": ["microservices", "php-fpm"],
+      "timezone": "browser",
+      "schemaVersion": 42,
+      "version": 3,
+      "refresh": "5s",
+      "preload": false,
+      "description": "Мониторинг PHP-FPM микросервисов: процессы, производительность, метрики",
+      "links": [],
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": "shared_crosshair",
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "templating": {
+        "list": [
+          {
+            "name": "phpfpm_service",
+            "type": "query",
+            "label": "🔍 PHP-FPM Service",
+            "datasource": "Prometheus",
+            "query": "label_values(phpfpm_active_processes, service)",
+            "regex": "/php-service-fpm-.*/",
+            "refresh": 1,
+            "multi": true,
+            "includeAll": true,
+            "current": {
+              "selected": true,
+              "text": "All",
+              "value": "$__all"
+            },
+            "allValue": ".*",
+            "options": []
+          }
+        ]
+      },
+      "panels": [
+        {
+          "id": 9,
+          "type": "row",
+          "title": "🐘 PHP-FPM - Health & Performance",
+          "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0},
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "id": 13,
+          "title": "Active Processes of $phpfpm_service",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 1},
+          "interval": "5s",
+          "repeat": "phpfpm_service",
+          "repeatDirection": "h",
+          "maxPerRow": 3,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "phpfpm_active_processes{service=~\"$phpfpm_service\"}",
+              "legendFormat": "{{service}} - Active",
+              "refId": "A",
+              "editorMode": "code",
+              "range": true
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "phpfpm_idle_processes{service=~\"$phpfpm_service\"}",
+              "legendFormat": "{{service}} - Idle",
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "phpfpm_total_processes{service=~\"$phpfpm_service\"}",
+              "legendFormat": "{{service}} - Total",
+              "refId": "C"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {"mode": "palette-classic"},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "green", "value": 0},
+                  {"color": "red", "value": 80}
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 25,
+                "gradientMode": "opacity",
+                "lineInterpolation": "smooth",
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {"mode": "none", "group": "A"},
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "showValues": false,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "thresholdsStyle": {"mode": "off"},
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {"id": "byRegexp", "options": ".*Active.*"},
+                "properties": [
+                  {"id": "color", "value": {"mode": "fixed", "fixedColor": "red"}},
+                  {"id": "custom.fillOpacity", "value": 35}
+                ]
+              },
+              {
+                "matcher": {"id": "byRegexp", "options": ".*Idle.*"},
+                "properties": [
+                  {"id": "color", "value": {"mode": "fixed", "fixedColor": "green"}},
+                  {"id": "custom.fillOpacity", "value": 20}
+                ]
+              },
+              {
+                "matcher": {"id": "byRegexp", "options": ".*Total.*"},
+                "properties": [
+                  {"id": "color", "value": {"mode": "fixed", "fixedColor": "blue"}},
+                  {"id": "custom.fillOpacity", "value": 10},
+                  {"id": "custom.lineWidth", "value": 3}
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": ["min", "max"],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc",
+              "hideZeros": false
+            }
+          },
+          "pluginVersion": "12.3.1"
+        },
+        {
+          "id": 20,
+          "title": "Listen Queue History of $phpfpm_service",
+          "type": "timeseries",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 10},
+          "interval": "5s",
+          "repeat": "phpfpm_service",
+          "repeatDirection": "h",
+          "maxPerRow": 3,
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "phpfpm_listen_queue{service=~\"$phpfpm_service\"}",
+              "legendFormat": "{{service}}",
+              "refId": "A",
+              "editorMode": "code",
+              "range": true
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {"mode": "thresholds"},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"value": null, "color": "green"},
+                  {"value": 10, "color": "yellow"},
+                  {"value": 50, "color": "orange"},
+                  {"value": 100, "color": "red"}
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 50,
+                "gradientMode": "scheme",
+                "lineInterpolation": "smooth",
+                "showPoints": "never",
+                "spanNulls": true,
+                "insertNulls": false,
+                "stacking": {"mode": "none", "group": "A"},
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "showValues": false,
+                "pointSize": 5,
+                "scaleDistribution": {"type": "linear"},
+                "thresholdsStyle": {"mode": "off"},
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "calcs": ["min", "max"],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc",
+              "hideZeros": false
+            }
+          },
+          "pluginVersion": "12.3.1"
+        },
+        {
+          "id": 15,
+          "title": "⚠️ Max Children Reached",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {"h": 7, "w": 12, "x": 0, "y": 19},
+          "interval": "5s",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "increase(phpfpm_max_children_reached{service=~\"$phpfpm_service\"}[5m])",
+              "legendFormat": "{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"value": null, "color": "green"},
+                  {"value": 1, "color": "yellow"},
+                  {"value": 5, "color": "orange"},
+                  {"value": 10, "color": "red"}
+                ]
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {"0": {"text": "OK", "color": "green"}}
+                }
+              ]
+            },
+            "overrides": []
+          },
+          "options": {
+            "graphMode": "area",
+            "colorMode": "background",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "textMode": "value_and_name",
+            "wideLayout": true,
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+          },
+          "pluginVersion": "12.3.1"
+        },
+        {
+          "id": 14,
+          "title": "🚨 Listen Queue",
+          "type": "stat",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "gridPos": {"h": 7, "w": 12, "x": 12, "y": 19},
+          "interval": "5s",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PBFA97CFB590B2093"
+              },
+              "expr": "phpfpm_listen_queue{service=~\"$phpfpm_service\"}",
+              "legendFormat": "{{service}}",
+              "refId": "A"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "min": 0,
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"value": null, "color": "green"},
+                  {"value": 10, "color": "yellow"},
+                  {"value": 50, "color": "orange"},
+                  {"value": 100, "color": "red"}
+                ]
+              },
+              "mappings": [
+                {
+                  "type": "value",
+                  "options": {"0": {"text": "No Queue", "color": "green"}}
+                }
+              ]
+            },
+            "overrides": []
+          },
+          "options": {
+            "graphMode": "area",
+            "colorMode": "background",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "textMode": "value_and_name",
+            "wideLayout": true,
+            "reduceOptions": {
+              "values": false,
+              "calcs": ["lastNotNull"],
+              "fields": ""
+            },
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+          },
+          "pluginVersion": "12.3.1"
+        }
+      ]
+    }
