@@ -26,7 +26,6 @@ $startMemory = memory_get_usage();
 // Параметры теста
 $dataSize = isset($_GET['size']) ? (int)$_GET['size'] : 1000; // Количество элементов
 $iterations = isset($_GET['iterations']) ? (int)$_GET['iterations'] : 100;
-$depth = isset($_GET['depth']) ? (int)$_GET['depth'] : 3; // Глубина вложенности
 
 // Ограничиваем параметры для предотвращения переполнения памяти
 if ($dataSize < 1 || $dataSize > 50000) {
@@ -35,14 +34,11 @@ if ($dataSize < 1 || $dataSize > 50000) {
 if ($iterations < 1 || $iterations > 1000) {
     $iterations = min($iterations, 1000);
 }
-if ($depth < 1 || $depth > 5) {
-    $depth = min($depth, 5);
-}
 
 /**
  * Генерация тестовых данных
  */
-function generateTestData($size, $depth = 3) {
+function generateTestData($size) {
     $data = [];
     for ($i = 0; $i < $size; $i++) {
         $item = [
@@ -58,10 +54,6 @@ function generateTestData($size, $depth = 3) {
             ]
         ];
         
-        if ($depth > 1) {
-            $item['nested'] = generateTestData(min(10, $size / 10), $depth - 1);
-        }
-        
         $data[] = $item;
     }
     return $data;
@@ -71,7 +63,7 @@ $results = [];
 
 // Генерируем тестовые данные с обработкой ошибок
 try {
-    $testData = generateTestData($dataSize, $depth);
+    $testData = generateTestData($dataSize);
     $dataSizeBytes = strlen(serialize($testData));
 } catch (Throwable $e) {
     http_response_code(500);
@@ -138,7 +130,7 @@ $results['encode_decode_cycle'] = [
 // Тест 4: Работа с большим JSON
 $largeDataSize = min($dataSize * 5, 10000); // Ограничиваем размер для предотвращения переполнения
 try {
-    $largeTestData = generateTestData($largeDataSize, $depth);
+    $largeTestData = generateTestData($largeDataSize);
 } catch (Throwable $e) {
     // Если не удалось сгенерировать большие данные, пропускаем этот тест
     $largeTestData = null;
@@ -180,7 +172,7 @@ if ($largeTestData !== null) {
 $mixedStart = microtime(true);
 $mixedResults = [];
 for ($i = 0; $i < $iterations / 10; $i++) {
-    $smallData = generateTestData(100, 2);
+    $smallData = generateTestData(100);
     $encoded = json_encode($smallData);
     $decoded = json_decode($encoded, true);
     
@@ -207,7 +199,6 @@ $response = [
     'parameters' => [
         'data_size_elements' => $dataSize,
         'iterations' => $iterations,
-        'depth' => $depth
     ],
     'results' => $results,
     'performance' => [

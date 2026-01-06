@@ -12,7 +12,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.opcache-only',
   live_update=[
-    sync('./shared', '/var/www/pdp/shared'),
+    sync('./shared/php/', '/var/www/pdp/shared/php/'),
   ],
 )
 
@@ -28,7 +28,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.opcache-jit',
   live_update=[
-    sync('./shared', '/var/www/pdp/shared'),
+    sync('./shared/php/', '/var/www/pdp/shared/php/'),
   ],
 )
 
@@ -44,7 +44,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.no-opcache',
   live_update=[
-    sync('./shared', '/var/www/pdp/shared'),
+    sync('./shared/php/', '/var/www/pdp/shared/php/'),
   ],
 )
 
@@ -84,7 +84,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.php-fpm-low',
   live_update=[
-    sync('./shared', '/var/www/pdp/shared'),
+    sync('./shared/php/', '/var/www/pdp/shared/php/'),
   ],
 )
 
@@ -100,7 +100,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.php-fpm-mid',
   live_update=[
-    sync('./shared', '/var/www/pdp/shared'),
+    sync('./shared/php/', '/var/www/pdp/shared/php/'),
   ],
 )
 
@@ -116,7 +116,7 @@ docker_build(
   '.',
   dockerfile='./infra/docker/Dockerfile.php-fpm-high',
   live_update=[
-    sync('./shared', '/var/www/pdp/shared'),
+    sync('./shared/php/', '/var/www/pdp/shared/php/'),
   ],
 )
 

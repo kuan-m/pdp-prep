@@ -12,5 +12,5 @@ COPY --from=composer:2.9 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/pdp
 
 # Копируем shared директорию с тестами
-COPY shared shared
+COPY shared/php shared
 
