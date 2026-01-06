@@ -1,4 +1,4 @@
-.PHONY: test-low test-mid test-high test-low-light test-mid-light test-high-light help
+.PHONY: test-low test-mid test-high test-low-light test-mid-light test-high-light lifecycle help
 .PHONY: test-go test-go-light
 
 # Параметры по умолчанию для нагрузочного тестирования
@@ -46,6 +46,9 @@ help:
 	@echo "Go сервис:"
 	@echo "  make test-go          - Тестирование Go сервиса (порт $(GO_PORT))"
 	@echo "  make test-go-light    - Тестирование Go сервиса с легким скриптом"
+	@echo ""
+	@echo "Проверка кода:"
+	@echo "  make check-php        - Проверка синтаксиса PHP скрипта shared/php/1_lifecycle/script.php"
 	@echo "======================================="
 
 # =========================================
@@ -134,3 +137,13 @@ test-go-light:
 	@echo "URL: $(URL_GO_LIGHT)"
 	@echo "======================================="
 	@npx autocannon -c $(C) -d $(D) $(URL_GO_LIGHT) --renderStatusCodes
+
+# =========================================
+# Проверка PHP скрипта
+# =========================================
+lifecycle:
+	@echo "======================================="
+	@echo "🔍 Проверка синтаксиса PHP скрипта"
+	@echo "Файл: shared/php/1_lifecycle/script.php"
+	@echo "======================================="
+	@kubectl exec -it deploy/php-service-fpm-high -- strace -f php shared/1_lifecycle/script.php
