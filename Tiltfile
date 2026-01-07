@@ -232,3 +232,30 @@ k8s_yaml('./infra/k8s/grafana-dashboard.yaml')
 k8s_resource('grafana', port_forwards=3001, labels="monitoring")
 
 ### End of Monitoring Infrastructure ###
+
+### Laravel Config ###
+
+k8s_yaml('./infra/k8s/config/laravel-config.yml')
+k8s_yaml('./infra/k8s/config/laravel-secrets.yml')
+
+### Laravel ###
+
+docker_build(
+  'laravel',
+  '.',
+  dockerfile='./infra/docker/Dockerfile.laravel',
+  live_update=[
+    sync('./shared/laravel', '/var/www/laravel'),
+  ],
+)
+
+k8s_yaml('./infra/k8s/laravel-nginx-conf-configmap.yaml')
+k8s_yaml('./infra/k8s/laravel-autoload-deployment.yaml')
+
+k8s_resource(
+  'laravel',
+  port_forwards=8086,
+  labels="frontend"
+)
+
+### End Laravel ###

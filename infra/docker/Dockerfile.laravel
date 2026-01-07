@@ -1,0 +1,27 @@
+FROM php:8.2-fpm-alpine
+
+WORKDIR /var/www/laravel
+
+RUN apk add --no-cache \
+    git \
+    unzip \
+    icu-dev \
+    oniguruma-dev \
+    libzip-dev
+
+RUN docker-php-ext-install \
+    pdo \
+    pdo_mysql \
+    intl \
+    mbstring \
+    zip \
+    bcmath
+
+COPY shared/laravel /var/www/laravel
+
+RUN chown -R www-data:www-data /var/www/laravel
+
+USER www-data
+
+EXPOSE 9000
+CMD ["php-fpm"]

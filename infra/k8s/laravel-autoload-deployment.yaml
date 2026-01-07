@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel
+  template:
+    metadata:
+      labels:
+        app: laravel
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.28.0-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+
+        - name: php-fpm
+          image: laravel
+          ports:
+            - containerPort: 9000
+
+          envFrom:
+            - configMapRef:
+                name: laravel-config
+            - secretRef:
+                name: laravel-secrets
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              memory: "512Mi"
+
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: laravel-nginx-config

@@ -1,5 +1,5 @@
-.PHONY: test-low test-mid test-high test-low-light test-mid-light test-high-light lifecycle help
-.PHONY: test-go test-go-light
+.PHONY: test-low test-mid test-high test-low-light test-mid-light test-high-light help
+.PHONY: test-go test-go-light check-php laravel-autoload
 
 # Параметры по умолчанию для нагрузочного тестирования
 C ?= 50
@@ -147,3 +147,26 @@ lifecycle:
 	@echo "Файл: shared/php/1_lifecycle/script.php"
 	@echo "======================================="
 	@kubectl exec -it deploy/php-service-fpm-high -- strace -f php shared/1_lifecycle/script.php
+
+# =========================================
+# Laravel autoload / подсчет классов
+# =========================================
+
+simple-autoload:
+	@echo "======================================="
+	@echo "🚀 Simple autoload / подсчет классов"
+	@echo "======================================="
+	@kubectl exec -it deploy/php-service-fpm-high -- php shared/4_autoload/test_simple_autoload.php
+
+laravel-autoload:
+	@echo "======================================="
+	@echo "🚀 Laravel autoload / подсчет классов"
+	@echo "======================================="
+	@kubectl exec -it deploy/laravel -c php-fpm -- php artisan autoload:count --details
+
+laravel-autoload-http:
+	@echo "======================================="
+	@echo "🌐 Laravel autoload / HTTP через K8s"
+	@echo "======================================="
+	@kubectl exec -it deploy/laravel -c nginx -- \
+		curl -s http://localhost/autoload/detailed | jq
