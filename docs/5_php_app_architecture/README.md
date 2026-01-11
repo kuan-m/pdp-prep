@@ -8,40 +8,36 @@ sequenceDiagram
     autonumber
     participant Client as Пользователь
     participant Nginx
-    participant FPM as PHP-FPM 
-    participant OPC as OPcache (Shared Memory)
-    participant App as PHP App (Код)
-    participant Redis as Redis 
+    participant FPMMaster as PHP-FPM (Master)
+    participant FPMWorker as PHP-FPM Worker (Zend Engine + OPcache)
+    participant Redis as Redis
     participant DB as Database (SQL)
 
     Client->>Nginx: HTTP Request (GET /users)
-    
-    Note over Nginx: Проверка статики. <br/>Если динамика — проброс в FastCGI
-    
-    Nginx->>FPM: FastCGI Request
-    
-    FPM->>OPC: Проверка байт-кода
-    alt Есть в кэше
-        OPC-->>FPM: Возврат байт-кода
-    else Нет в кэше
-        FPM->>App: Чтение .php файлов с диска
-        App-->>FPM: Компиляция в байт-код
-        FPM->>OPC: Сохранение байт-кода
+    Nginx->>FPMMaster: FastCGI Request
+    FPMMaster->>FPMWorker: Передача запроса свободному воркеру
+
+    Note right of FPMWorker: Внутри процесса воркера:<br/>Интерпретатор PHP + OPcache
+    alt Байт-код есть в OPcache
+        Note over FPMWorker: Хит кэша. Код готов.
+    else Байт-кода нет в OPcache
+        FPMWorker->>FPMWorker: Чтение .php файлов с диска
+        FPMWorker->>FPMWorker: Компиляция в байт-код
+        FPMWorker->>FPMWorker: Сохранение байт-кода в OPcache (в памяти процесса)
     end
 
-    FPM->>App: Выполнение скрипта
-    
-    App->>Redis: Запрос кэша (Get User Data)
+    FPMWorker->>FPMWorker: Выполнение байт-кода приложения
+    FPMWorker->>Redis: Запрос кэша (Get User Data)
     alt Cache Miss
-        Redis-->>App: NULL
-        App->>DB: SELECT * FROM users...
-        DB-->>App: Result Set
-        App->>Redis: SET user Data (кэширование)
+        Redis-->>FPMWorker: NULL
+        FPMWorker->>DB: SELECT * FROM users...
+        DB-->>FPMWorker: Получаем Data
+        FPMWorker->>Redis: SET user Data
     else Cache Hit
-        Redis-->>App: Data (JSON/Serialized)
+        Redis-->>FPMWorker: Возвращаем Data
     end
 
-    App-->>FPM: Формирование ответа (HTML/JSON)
-    FPM-->>Nginx: FastCGI Response
+    FPMWorker-->>FPMMaster: Результат выполнения
+    FPMMaster-->>Nginx: FastCGI Response
     Nginx-->>Client: HTTP Response
 ```
