@@ -16,17 +16,21 @@
 
 ## Темы для изучения
 
-1.  PHP lifecycle
+1.  [PHP lifecycle](docs/1_2_3_lifecycle_php_cgi_fpm_opcache/README.md)
 
 2.  PHP-FPM
+    - [Теория](docs/1_2_3_lifecycle_php_cgi_fpm_opcache/README.md#2-разница-php-cgi-и-php-fpm)
+    - [Практика](shared/php/2_php_fpm/README.md)
 
-3.  JIT, OPCache.
+3.  JIT, OPCache
+    - [Теория](docs/1_2_3_lifecycle_php_cgi_fpm_opcache/README.md)
+    - [Практика](shared/php/3_jit_opcache/README.md)
 
 4.  Autoload/Composer
 
 5.  Роадмап по System Design
 
-## Практика
+## Задачи
 
 1.  Написать PHP-скрипт и отследить его полный lifecycle:
 
