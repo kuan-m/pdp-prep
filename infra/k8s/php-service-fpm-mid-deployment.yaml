@@ -21,10 +21,9 @@ spec:
           resources:
             requests:
               memory: "512Mi"
-              cpu: "500m"
+              cpu: "1000m"
             limits:
               memory: "2Gi"
-              cpu: "2000m"
           env:
             - name: PHP_FPM_LISTEN
               value: "0.0.0.0:9000"
